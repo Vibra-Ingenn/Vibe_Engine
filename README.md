@@ -53,7 +53,7 @@ Vibra auto-registers during install. If you need to add it manually, edit `%APPD
 
 Restart Claude Desktop. The `vibra-ingenn` tool appears in Settings → Developer → MCP Servers.
 
-### Cursor / Windsurf / VS Code (Cline / Roo Code)
+### Cursor / Windsurf / VS Code # Zoo Code)
 
 Add to your MCP settings:
 
@@ -113,8 +113,8 @@ Plus: conditional DAG branching (`on_success` / `on_failure`), per-task `run_if`
 
 ## Pricing
 
-- **Basic** — $25.99/month ($249/year) — Local AI execution, workspace inspector, REST API, hardware ID lock
-- **Creator** — $59.99/month ($599/year) — Everything in Basic + web scraping (`strip_html`), video/audio script model packs, multimodal workflows
+- **PRO** — $8.99/month ($104.99/year) — Local AI execution, workspace inspector, REST API, hardware ID lock, security updates and product upgrades. **** Only Early Adopters who pay for a year will lock into this price **** 
+- **free plans** are customer accounts that no longer wish to continue receiving service and will become local only. So only Ollama LMStudio will still work and ALL Cloud LLM's will no longer be available, plus security updates and product upgrades will no longer be available 
 
 Free 7-day trial. Buy at **https://adeptuscamini.com**.
 
@@ -131,7 +131,7 @@ Business Source License 1.1. Source code is proprietary. Redistribution of the i
 - Website: https://adeptuscamini.com
 - Download: https://adeptuscamini.com/download.html
 - Docs & guides: bundled inside the installer under `docs/`
+- Support please email us at support@adeptuscamini.com 
 
----
 
-*Vibra-Ingenn is developed and maintained by Adeptus Camini. © 2024–2026 Paul. All rights reserved.*
+*Vibra-Ingenn is developed and maintained by its legal Owner. © 2024–2026. All rights reserved.*
