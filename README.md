@@ -1,137 +1,173 @@
-# Vibra-Ingenn (Vibe Engine)
+<p align="center">
+  <img src="https://adeptuscamini.com/vibra-ingenn-wheel.jpeg" alt="Vibra-Ingenn (Vibe Engine) PRO" width="420">
+</p>
 
-**A deterministic local execution runtime for AI agents. The AI writes a JSON recipe once, then a native Go engine runs it — locally, in 0–200ms, on any Windows machine.**
+# Vibra-Ingenn (Vibe Engine) PRO
 
-Website: **https://adeptuscamini.com**
-Download: **https://adeptuscamini.com/download.html**
+**Software your AI pilots:** your AI writes a recipe (a short JSON list of steps), and Vibra-Ingenn (Vibe Engine) runs it the same way every time on your own PC. It is not an autonomous agent loop that re-sends the whole chat on every step.
 
-Vibra-Ingenn is the interop layer for multi-LLM agent workflows. It works as an MCP server for Claude Desktop, Cursor, Cline, Windsurf, and VS Code — and as a local REST/CLI runtime that can call out to any OpenAI-compatible LLM (Ollama, LM Studio, OpenRouter, OpenAI, Anthropic, Gemini, Groq, Together, Fireworks, vLLM, Jan, LocalAI).
+> **This repository is documentation only.** The Vibe Engine runtime is closed source. Install it from [adeptuscamini.com/download.html](https://adeptuscamini.com/download.html).
 
-> *This repository is documentation only. The Vibra-Ingenn source code is proprietary. Download the installer from adeptuscamini.com.*
+Current release: **2.0.0**.
 
 ---
 
-## Why Vibra-Ingenn
+## What's new in 2.0.0
 
-Traditional AI agents (ReAct, LangChain, AutoGPT) burn tokens by re-sending the full conversation history at every step. By step 10 you're at 25,000+ accumulated tokens per task.
+2.0.0 is a full new version: you can ask in plain words on Home, recipes handle more document types (including real Excel), miswritten steps are repaired or refused with a reason, and scheduled runs actually fire.
 
-Vibra-Ingenn replaces the loop with a **single-pass workflow compiler**:
+**Ask in plain words**
 
-1. The AI writes a JSON recipe once (~500 tokens).
-2. The Go runtime executes 1–50 steps locally in milliseconds.
-3. The recipe is a durable file on disk — save it, re-run it, share it, commit it to git.
+- Home asks “What do you want done?” — your AI writes the recipe, the engine checks and repairs it, then runs it.
+- One **AI to use** list for every Janus, Ollama, and LM Studio model plus your online models; switch from the header.
+- Janus on this PC counts as local; so does an AI server elsewhere on your home network.
+- Separate settings for the AI you chat with and the AI that writes recipes.
+- **What your AI did** lists every finished job on Home.
 
-Result: **~98% fewer tokens per task**, **~180ms execution vs. 30–90s for cloud agents**, and small local models (Llama 3.2 3B, Qwen 2.5 3B, DeepSeek-R1 distills) work reliably because they only need to produce one JSON recipe — not survive a 10-step conversation.
+**Recipes do more**
+
+- Run the same steps on every file in a folder (`for_each`).
+- Real Excel (`.xlsx`) with trustworthy rows — the same bill is not added twice.
+- Drop folders that trigger a recipe when a file lands.
+- Read text, CSV, Word, and PDF (including damaged PDFs).
+- Remember a value and report whether it is new, the same, or changed.
+- Ask the AI several times and keep only what the answers agree on.
+- Scheduled recipes actually run on time.
+
+**Mistake handling**
+
+- Self-healing repairs slightly wrong steps in code; clearly broken steps are refused with a reason.
+- Self-correcting recipes send the model one named fix when a step fails.
+- Repairs and refusals are logged on your PC.
+- Local models that support format rules (Ollama, LM Studio) are steered to stay inside the recipe format.
+
+**Dashboard**
+
+- Calmer layout, plain error words, browse buttons, drag-and-drop, open-result-in-folder, add and save recipes from the editor, Inter font and built-in colours, dashboard in its own window again.
+
+**Fixes that matter**
+
+- Recipes survive uninstall and upgrade; scheduled jobs were broken and now run.
+
+---
+
+## Why it is not an agent
+
+The AI writes the recipe once, then steps back. The model only comes back when a step explicitly asks it to. Pure-execution recipes can rerun with no further model calls; AI-in-the-loop recipes call a model only on the steps that say so. See [Our way vs agent loops](https://adeptuscamini.com/vs-agent-loops.html).
+
+---
+
+## Key features
+
+- **Any-model chaining:** Chain local models (Ollama, LM Studio, Janus) with cloud models in one recipe — model-agnostic by design.
+- **Privacy boundary:** Local steps can read private files; only what a recipe step sends onward reaches the cloud (see example below).
+- **Self-fixing recipes:** When a step fails, the engine can show the AI what went wrong on your PC and let it correct that one step, with a limit before it asks you.
+- **Ask a person mid-run:** Logins and CAPTCHAs open for you; you finish, confirm, and the recipe continues.
+- **State and branching:** Remember values across runs; branch on success or failure; compare web pages for changes.
+- **Recipe calls recipe:** One recipe can invoke another in order, like a small program made of files.
+- **MCP for AI clients:** Works as an MCP server in Claude Desktop, Cursor, Cline, VS Code, and similar tools.
+
+---
+
+## Privacy boundary (triple-model audit)
+
+The demo recipe `triple_model_private_audit` keeps source code on your PC: a local AI reads the file and passes on **only function signatures and one-line descriptions**. Cloud models threat-model and suggest fixes from those signatures — not from the full source. Change the file path in the recipe to audit your own code.
+
+What stays local: the file read and the local model’s extraction step. What the cloud sees: only the text stored from that extraction step, sent in later HTTP steps.
+
+---
+
+## A short real recipe
+
+Gets the current Bitcoin and Ethereum prices and adds one line to price_history.csv on your Desktop, so the history grows every time it runs. No AI needed — the engine writes the numbers itself (change the API address to track other prices).
+
+```json
+{
+  "workflow_id": "competitor-price-tracker",
+  "description": "Gets the current Bitcoin and Ethereum prices and adds one line to price_history.csv on your Desktop, so the history grows every time it runs. No AI needed: the engine writes the numbers itself. Change the address to track other prices.",
+  "tasks": [
+    {
+      "id": "fetch_pricing",
+      "trigger": "manual",
+      "action_type": "http_request",
+      "target": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd",
+      "payload": {
+        "method": "GET"
+      },
+      "output": {
+        "store_as": "prices"
+      },
+      "next": "append_to_csv"
+    },
+    {
+      "id": "append_to_csv",
+      "trigger": "after:fetch_pricing",
+      "action_type": "file_op",
+      "target": "{{desktop_dir}}\\price_history.csv",
+      "payload": {
+        "operation": "append",
+        "content": "{{datetime}},{{prices.bitcoin.usd}},{{prices.ethereum.usd}}\n"
+      },
+      "next": "notify_done"
+    },
+    {
+      "id": "notify_done",
+      "trigger": "after:append_to_csv",
+      "action_type": "notify",
+      "target": "stdout",
+      "payload": {
+        "message": "\u2713 Added today's prices to price_history.csv on your Desktop (Bitcoin {{prices.bitcoin.usd}}, Ethereum {{prices.ethereum.usd}})"
+      }
+    }
+  ]
+}
+```
+
+More examples: [Recipe library](https://adeptuscamini.com/recipes/).
 
 ---
 
 ## Install (Windows)
 
-1. Download the installer: **https://adeptuscamini.com/download.html**
-2. Run `Setup_Vibra_Ingenn.exe`
-3. The installer auto-registers Vibra with Claude Desktop's MCP config
-4. Launch from Start Menu or run `vibra.exe`
+1. Download the installer from **[adeptuscamini.com/download.html](https://adeptuscamini.com/download.html)** (Windows 10 / 11).
+2. Run `Setup_Vibra_Ingenn.exe`. If SmartScreen appears, choose **More info**, then **Run anyway**.
+3. The dashboard opens in your browser; a new install includes a **7-day trial** with full features.
+
+The installer is standalone — no Go, Python, or other dev tools required. Linux builds are not offered on the download page today.
+
+After install, PRO keeps cloud AI and outbound web access after the trial; local recipes and files on your PC stay yours either way.
 
 ---
 
-## Connect to your AI client
+## Try it in your browser
 
-### Claude Desktop
-
-Vibra auto-registers during install. If you need to add it manually, edit `%APPDATA%\Claude\claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "vibra-ingenn": {
-      "command": "%LOCALAPPDATA%\\Vibra-Ingenn\\vibra.exe",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Restart Claude Desktop. The `vibra-ingenn` tool appears in Settings → Developer → MCP Servers.
-
-### Cursor / Windsurf / VS Code # Zoo Code)
-
-Add to your MCP settings:
-
-```json
-{
-  "mcpServers": {
-    "vibra-ingenn": {
-      "command": "%LOCALAPPDATA%\\Vibra-Ingenn\\vibra.exe",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-### Ollama / LM Studio (local LLM as caller)
-
-Vibra auto-discovers Ollama (port 11434), LM Studio (1234), vLLM (8000), Jan (1337), and LocalAI (8080) on startup. No configuration required.
-
-For a purpose-tuned local model, create the Vibra-Llama variant:
-
-```bash
-ollama create vibra-llama -f recipes/ai/Modelfile.vibra
-ollama run vibra-llama "Create a file on my desktop"
-```
+**[adeptuscamini.com/playground](https://adeptuscamini.com/playground)** — run sample recipes against the public playground (topics such as research briefs and price checks; see the site recipe library for what ships there).
 
 ---
 
-## Quick start — one recipe, one command
+## Links
 
-Ask any connected AI: *"Use Vibra-Ingenn to write a file named report.txt to my desktop containing 'Hello from Vibe Engine'."*
-
-Or run a recipe directly from the CLI:
-
-```powershell
-.\vibra run .\recipes\web\bitcoin_live_report.json
-```
-
-Vibra parses the JSON, executes the task graph, and returns results — no LLM re-calls between steps.
-
----
-
-## What Vibra-Ingenn can do
-
-| Action Type   | What it does |
-|:--------------|:---|
-| `file_op`     | Read, write, append, list, delete, exists — with type & date filters |
-| `http_request`| GET/POST/PUT/PATCH/DELETE with headers, body, and optional HTML stripping |
-| `run_script`  | Execute shell scripts (safe mode + whitelist gated) |
-| `ai_call`     | Call any OpenAI-compatible LLM as a workflow step |
-| `notify`      | stdout or webhook (Slack/Discord-compatible) |
-| `transform`   | json_extract, html→text, uppercase/lowercase/trim, template rendering |
-| `gui_op`      | Native Windows mouse/keyboard automation (user32.dll) |
-
-Plus: conditional DAG branching (`on_success` / `on_failure`), per-task `run_if` guards, automatic retries, encrypted secrets vault, cron scheduling (`schedule:0 9 * * *`), webhook triggers, and cryptographic SHA-256 audit receipts.
+| | |
+|---|---|
+| Website | [adeptuscamini.com/vibra-ingenn.html](https://adeptuscamini.com/vibra-ingenn.html) |
+| Download | [adeptuscamini.com/download.html](https://adeptuscamini.com/download.html) |
+| Recipe library | [adeptuscamini.com/recipes/](https://adeptuscamini.com/recipes/) |
+| Docs for AI tools | [adeptuscamini.com/llms.txt](https://adeptuscamini.com/llms.txt) |
+| vs agent loops | [adeptuscamini.com/vs-agent-loops.html](https://adeptuscamini.com/vs-agent-loops.html) |
+| Compare | [adeptuscamini.com/compare.html](https://adeptuscamini.com/compare.html) |
 
 ---
 
-## Pricing
+## Works with the rest of the toolbox
 
-- **PRO** — $8.99/month ($104.99/year) — Local AI execution, workspace inspector, REST API, hardware ID lock, security updates and product upgrades. **** Only Early Adopters who pay for a year will lock into this price **** 
-- **free plans** are customer accounts that no longer wish to continue receiving service and will become local only. So only Ollama LMStudio will still work and ALL Cloud LLM's will no longer be available, plus security updates and product upgrades will no longer be available 
-
-Free 7-day trial. Buy at **https://adeptuscamini.com**.
+Vibe Engine can run **[Janus](https://github.com/Vibra-Ingenn/Janus)**, **[Terminus](https://github.com/Vibra-Ingenn/Terminus)**, **[Vox Vena](https://github.com/Vibra-Ingenn/VoxVena)**, **[VoxStilus](https://github.com/Vibra-Ingenn/VoxStilus)** (transcription), and other tools together — one recipe, same steps every time. All from [Adeptus Camini](https://adeptuscamini.com).
 
 ---
 
-## License
+## Like it?
 
-Business Source License 1.1. Source code is proprietary. Redistribution of the installer is permitted for personal, non-commercial evaluation.
+If the docs help you explain what Vibe Engine does, a star on this repo helps people find it.
 
 ---
 
-## Support & Contact
-
-- Website: https://adeptuscamini.com
-- Download: https://adeptuscamini.com/download.html
-- Docs & guides: bundled inside the installer under `docs/`
-- Support please email us at support@adeptuscamini.com 
-
-
-*Vibra-Ingenn is developed and maintained by its legal Owner. © 2024–2026. All rights reserved.*
+<p align="center"><i lang="la" title="We refuse to accept the same broken things, we build differently!">Recusamus eadem fracta accipere. Nos aliter aedificamus.</i><br><sub>We refuse to accept the same broken things, we build differently!</sub></p>
